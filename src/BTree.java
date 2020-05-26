@@ -1,4 +1,4 @@
-import com.sun.source.tree.Tree;
+
 
 import java.util.Arrays;
 import java.util.Comparator;
@@ -9,7 +9,7 @@ public class BTree<T extends Comparable<T>> {
     // Default to 2-3 Tree
     private int minKeySize = 1;
     private int minChildrenSize = minKeySize + 1; // 2
-    private int maxKeySize = 2 * minKeySize; // 2
+    private int maxKeySize = 2 * minKeySize; // 2 //Edit to reflect actual 't' value as shown in class according to the forum t=2 by default
     private int maxChildrenSize = maxKeySize + 1; // 3
 
     private Node<T> root = null;
@@ -368,7 +368,7 @@ public class BTree<T extends Comparable<T>> {
      *            with children to combined.
      * @return True if combined successfully.
      */
-    private boolean combined(Node<T> node) {
+    private boolean combined(Node<T> node) { //this method is marge and shift togather and it prefers the right before the left. and deletes first and then correcting
         Node<T> parent = node.parent;
         int index = parent.indexOf(node);
         int indexOfLeftNeighbor = index - 1;
