@@ -417,7 +417,7 @@ public class BTree<T extends Comparable<T>> {
                 T removeValue = rightNeighbor.getKey(0);
                 int prev = getIndexOfPreviousValue(parent, removeValue);
                 T parentValue = parent.removeKey(prev);
-                parent.removeChild(rightNeighbor);
+                parent.removeChild(rightNeighbor); //not moving the child to the marged node. problem!
                 node.addKey(parentValue);
                 for (int i = 0; i < rightNeighbor.keysSize; i++) {
                     T v = rightNeighbor.getKey(i);
@@ -427,7 +427,7 @@ public class BTree<T extends Comparable<T>> {
                     Node<T> c = rightNeighbor.getChild(i);
                     node.addChild(c);
                 }
-
+                    // in general i think this is Ok
                 if (parent.parent != null && parent.numberOfKeys() < minKeySize) {
                     // removing key made parent too small, combined up tree
                     this.combined(parent);
@@ -442,7 +442,7 @@ public class BTree<T extends Comparable<T>> {
                 T removeValue = leftNeighbor.getKey(leftNeighbor.numberOfKeys() - 1);
                 int prev = getIndexOfNextValue(parent, removeValue);
                 T parentValue = parent.removeKey(prev);
-                parent.removeChild(leftNeighbor);
+                parent.removeChild(leftNeighbor); //not moving the child to the marged node. problem!
                 node.addKey(parentValue);
                 for (int i = 0; i < leftNeighbor.keysSize; i++) {
                     T v = leftNeighbor.getKey(i);
@@ -452,7 +452,7 @@ public class BTree<T extends Comparable<T>> {
                     Node<T> c = leftNeighbor.getChild(i);
                     node.addChild(c);
                 }
-
+                //in general i think its Ok
                 if (parent.parent != null && parent.numberOfKeys() < minKeySize) {
                     // removing key made parent too small, combined up tree
                     this.combined(parent);
@@ -484,6 +484,7 @@ public class BTree<T extends Comparable<T>> {
                 return i - 1;
         }
         return node.numberOfKeys() - 1;
+        //not returning -1 in if there is no key
     }
 
     /**
@@ -502,6 +503,7 @@ public class BTree<T extends Comparable<T>> {
                 return i;
         }
         return node.numberOfKeys() - 1;
+        //not returning -1 if there is no key
     }
 
     /**
@@ -592,7 +594,7 @@ public class BTree<T extends Comparable<T>> {
                 return false;
         }
 
-        for (int i = 0; i < node.childrenSize; i++) {
+        for (int i = 0; i < node.childrenSize; i++) { //can make the validation on the entire tree or on an entire sub tree and not on a specific node
             Node<T> c = node.getChild(i);
             boolean valid = this.validateNode(c);
             if (!valid)
