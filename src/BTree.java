@@ -375,7 +375,7 @@ public class BTree<T extends Comparable<T>> {
         int indexOfRightNeighbor = index + 1;
 
         Node<T> rightNeighbor = null;
-        int rightNeighborSize = -minChildrenSize;
+        int rightNeighborSize = -minChildrenSize; //unneeded
         if (indexOfRightNeighbor < parent.numberOfChildren()) {
             rightNeighbor = parent.getChild(indexOfRightNeighbor);
             rightNeighborSize = rightNeighbor.numberOfKeys();
@@ -395,7 +395,7 @@ public class BTree<T extends Comparable<T>> {
             }
         } else {
             Node<T> leftNeighbor = null;
-            int leftNeighborSize = -minChildrenSize;
+            int leftNeighborSize = -minChildrenSize; //unneeded
             if (indexOfLeftNeighbor >= 0) {
                 leftNeighbor = parent.getChild(indexOfLeftNeighbor);
                 leftNeighborSize = leftNeighbor.numberOfKeys();
