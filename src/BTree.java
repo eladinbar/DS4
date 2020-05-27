@@ -1,3 +1,6 @@
+import org.graalvm.compiler.nodes.calc.LeftShiftNode;
+
+import javax.naming.ldap.Rdn;
 import java.util.Arrays;
 import java.util.Comparator;
 
@@ -161,50 +164,50 @@ public class BTree<T extends Comparable<T>> {
     private void split(Node<T> nodeToSplit) {
         Node<T> node = nodeToSplit;
         int numberOfKeys = node.numberOfKeys();
-        int medianIndex = numberOfKeys / 2;
-        T medianValue = node.getKey(medianIndex);
+        //finding the middle key to move to the parent nude
+        int middleKey = numberOfKeys / 2;
+        T middleKeyValue = node.getKey(middleKey);
 
-        Node<T> left = new Node<T>(null, maxKeySize, maxChildrenSize);
-        for (int i = 0; i < medianIndex; i++) {
-            left.addKey(node.getKey(i));
+        //creating the new node that needs to be of the left of the middleKey
+        Node<T> leftHalf = new Node<>(null, maxKeySize, maxChildrenSize);
+        for (int i = 0; i < middleKey; i++) {
+            leftHalf.addKey(node.getKey(i));
         }
+        //moving the children to the leftHalf
         if (node.numberOfChildren() > 0) {
-            for (int j = 0; j <= medianIndex; j++) {
-                Node<T> c = node.getChild(j);
-                left.addChild(c);
+            for (int i = 0; i <= middleKey; i++) {
+                Node<T> child = node.getChild(i);
+                leftHalf.addChild(child);
             }
         }
 
-        Node<T> right = new Node<T>(null, maxKeySize, maxChildrenSize);
-        for (int i = medianIndex + 1; i < numberOfKeys; i++) {
-            right.addKey(node.getKey(i));
+        //creating the new node that needs to be of the right of the middleKey
+        Node<T> rightHalf = new Node<>(null, maxKeySize, maxChildrenSize);
+        for (int i = middleKey + 1; i < numberOfKeys; i++) {
+            leftHalf.addKey(node.getKey(i));
         }
+        //moving the children to the leftHalf
         if (node.numberOfChildren() > 0) {
-            for (int j = medianIndex + 1; j < node.numberOfChildren(); j++) {
-                Node<T> c = node.getChild(j);
-                right.addChild(c);
+            for (int i = middleKey + 1; i < node.numberOfChildren(); i++) {
+                Node<T> child = node.getChild(i);
+                leftHalf.addChild(child);
             }
         }
 
+        //splitting the root
         if (node.parent == null) {
-            // new root, height of tree is increased
-            Node<T> newRoot = new Node<T>(null, maxKeySize, maxChildrenSize);
-            newRoot.addKey(medianValue);
-            node.parent = newRoot; //Unnecessary and probably going to fuck up - line
+            Node<T> newRoot = new Node<>(null, maxKeySize, maxChildrenSize);
+            newRoot.addKey(middleKeyValue);
+            newRoot.addChild(leftHalf);
+            newRoot.addChild(rightHalf);
             root = newRoot;
-            node = root;
-            node.addChild(left);
-            node.addChild(right);
+            //splitting an internal node
         } else {
-            // Move the median value up to the parent
             Node<T> parent = node.parent;
-            parent.addKey(medianValue);
+            parent.addKey(middleKeyValue);
+            parent.addChild(leftHalf);
+            parent.addChild(rightHalf);
             parent.removeChild(node);
-            parent.addChild(left);
-            parent.addChild(right);
-
-            if (parent.numberOfKeys() > maxKeySize) //Redundant line
-                split(parent);
         }
     }
 
@@ -361,101 +364,93 @@ public class BTree<T extends Comparable<T>> {
      */
     private boolean combined(Node<T> node) { //this method is marge and shift togather and it prefers the right before the left. and deletes first and then correcting
         Node<T> parent = node.parent;
-        int index = parent.indexOf(node);
-        int indexOfLeftNeighbor = index - 1;
-        int indexOfRightNeighbor = index + 1;
+        int borrowerNodeIndex = parent.indexOf(node);
+        int leftBrotherIndex = borrowerNodeIndex - 1;
+        int rightBrotherIndex = borrowerNodeIndex + 1;
 
-        Node<T> rightNeighbor = null;
-        int rightNeighborSize = -minChildrenSize; //unneeded
-        if (indexOfRightNeighbor < parent.numberOfChildren()) {
-            rightNeighbor = parent.getChild(indexOfRightNeighbor);
-            rightNeighborSize = rightNeighbor.numberOfKeys();
-        }
+        Node<T> leftBrother = parent.getChild(leftBrotherIndex);
+        Node<T> rightBrother = parent.getChild(rightBrotherIndex);
 
-        // Try to borrow neighbor
-        if (rightNeighbor != null && rightNeighborSize > minKeySize) {
-            // Try to borrow from right neighbor
-            T removeValue = rightNeighbor.getKey(0);
-            int prev = getIndexOfPreviousValue(parent, removeValue);
-            T parentValue = parent.removeKey(prev);
-            T neighborValue = rightNeighbor.removeKey(0);
-            node.addKey(parentValue);
-            parent.addKey(neighborValue);
-            if (rightNeighbor.numberOfChildren() > 0) {
-                node.addChild(rightNeighbor.removeChild(0));
-            }
+        //try to borrow from the left brother
+        if (leftBrotherIndex >= 0 && leftBrother.numberOfKeys() > minKeySize) {
+            T leftBrotherMaxKey = leftBrother.getKey(leftBrother.keysSize - 1);
+            Node<T> leftBrotherRightChild = leftBrother.getChild(leftBrother.childrenSize - 1);
+            int separatingKeyIndex = leftBrotherIndex;
+            T parentKeyToMove = parent.removeKey(separatingKeyIndex);
+            parent.addKey(leftBrotherMaxKey);
+            node.addKey(parentKeyToMove);
+            node.addChild(leftBrotherRightChild);
+            //try to borrow fromm the right brother
+        } else if (rightBrotherIndex < parent.numberOfChildren() && rightBrother.numberOfKeys() > minKeySize) {
+            T rightBrotherMinKey = rightBrother.getKey(0);
+            Node<T> rightBrotherLeftChild = rightBrother.getChild(0);
+            int separatingKeyIndex = borrowerNodeIndex;
+            T parentKeyToMove = parent.removeKey(separatingKeyIndex);
+            parent.addKey(rightBrotherMinKey);
+            node.addKey(parentKeyToMove);
+            node.addChild(rightBrotherLeftChild);
+            //can't borrow from brothers. try to marge nodes
         } else {
-            Node<T> leftNeighbor = null;
-            int leftNeighborSize = -minChildrenSize; //unneeded
-            if (indexOfLeftNeighbor >= 0) {
-                leftNeighbor = parent.getChild(indexOfLeftNeighbor);
-                leftNeighborSize = leftNeighbor.numberOfKeys();
-            }
+            Node<T> productNode = new Node<>(null, maxKeySize, maxChildrenSize); //creating an empty node from the merging
+            //try to marge with left brother if exist
+            if (leftBrotherIndex >= 0) {
+                int middleKeyIndex = leftBrotherIndex;
+                productNode.addKey(parent.removeKey(middleKeyIndex));
+                //adding the left brother keys
+                for (int i = 0; i < leftBrother.numberOfKeys(); i++) {
+                    T key = leftBrother.getKey(i);
+                    productNode.addKey(key);
+                }
+                // if leftBrother have children move them to productNode
+                if (leftBrother.numberOfChildren() > 0) {
+                    for (int i = 0; i < leftBrother.numberOfChildren(); i++) {
+                        Node<T> child = leftBrother.getChild(i);
+                        productNode.addChild(child);
+                    }
+                }
+                //adding the node keys to the product node
+                for (int i = 0; i < node.numberOfKeys(); i++) {
+                    T key = node.getKey(i);
+                    productNode.addKey(key);
+                }
+                // if node have children then move them to the productNode
+                if (node.numberOfChildren() > 0) {
+                    for (int i = 0; i < node.numberOfChildren(); i++) {
+                        Node<T> child = node.getChild(i);
+                        productNode.addChild(child);
+                    }
+                }
+            } else {
+                //merging with the right brother
+                int middleKeyIndex = borrowerNodeIndex;
+                productNode.addKey(parent.removeKey(middleKeyIndex));
+                //adding the right brother keys
+                for (int i = 0; i < rightBrother.numberOfChildren(); i++) {
+                    T key = rightBrother.getKey(i);
+                    productNode.addKey(key);
+                }
+                //if rightBrother have children move them to productNode
+                if (rightBrother.numberOfChildren() > 0) {
+                    for (int i = 0; i < rightBrother.numberOfChildren(); i++) {
+                        Node<T> child = rightBrother.getChild(i);
+                        productNode.addChild(child);
+                    }
+                }
 
-            if (leftNeighbor != null && leftNeighborSize > minKeySize) {
-                // Try to borrow from left neighbor
-                T removeValue = leftNeighbor.getKey(leftNeighbor.numberOfKeys() - 1);
-                int prev = getIndexOfNextValue(parent, removeValue);
-                T parentValue = parent.removeKey(prev);
-                T neighborValue = leftNeighbor.removeKey(leftNeighbor.numberOfKeys() - 1);
-                node.addKey(parentValue);
-                parent.addKey(neighborValue);
-                if (leftNeighbor.numberOfChildren() > 0) {
-                    node.addChild(leftNeighbor.removeChild(leftNeighbor.numberOfChildren() - 1));
+                //adding the node keys to the product node
+                for (int i = 0; i < node.numberOfKeys(); i++) {
+                    T key = node.getKey(i);
+                    productNode.addKey(key);
                 }
-            } else if (rightNeighbor != null && parent.numberOfKeys() > 0) {
-                // Can't borrow from neighbors, try to combined with right neighbor
-                T removeValue = rightNeighbor.getKey(0);
-                int prev = getIndexOfPreviousValue(parent, removeValue);
-                T parentValue = parent.removeKey(prev);
-                parent.removeChild(rightNeighbor); //not moving the child to the marged node. problem!
-                node.addKey(parentValue);
-                for (int i = 0; i < rightNeighbor.keysSize; i++) {
-                    T v = rightNeighbor.getKey(i);
-                    node.addKey(v);
-                }
-                for (int i = 0; i < rightNeighbor.childrenSize; i++) {
-                    Node<T> c = rightNeighbor.getChild(i);
-                    node.addChild(c);
-                }
-                // in general i think this is Ok
-                if (parent.parent != null && parent.numberOfKeys() < minKeySize) {
-                    // removing key made parent too small, combined up tree
-                    this.combined(parent);
-                } else if (parent.numberOfKeys() == 0) {
-                    // parent no longer has keys, make this node the new root
-                    // which decreases the height of the tree
-                    node.parent = null;
-                    root = node;
-                }
-            } else if (leftNeighbor != null && parent.numberOfKeys() > 0) {
-                // Can't borrow from neighbors, try to combined with left neighbor
-                T removeValue = leftNeighbor.getKey(leftNeighbor.numberOfKeys() - 1);
-                int prev = getIndexOfNextValue(parent, removeValue);
-                T parentValue = parent.removeKey(prev);
-                parent.removeChild(leftNeighbor); //not moving the child to the marged node. problem!
-                node.addKey(parentValue);
-                for (int i = 0; i < leftNeighbor.keysSize; i++) {
-                    T v = leftNeighbor.getKey(i);
-                    node.addKey(v);
-                }
-                for (int i = 0; i < leftNeighbor.childrenSize; i++) {
-                    Node<T> c = leftNeighbor.getChild(i);
-                    node.addChild(c);
-                }
-                //in general i think its Ok
-                if (parent.parent != null && parent.numberOfKeys() < minKeySize) {
-                    // removing key made parent too small, combined up tree
-                    this.combined(parent);
-                } else if (parent.numberOfKeys() == 0) {
-                    // parent no longer has keys, make this node the new root
-                    // which decreases the height of the tree
-                    node.parent = null;
-                    root = node;
+                // if node have children then move them to the productNode
+                if (node.numberOfChildren() > 0) {
+                    for (int i = 0; i < node.numberOfChildren(); i++) {
+                        Node<T> child = node.getChild(i);
+                        productNode.addChild(child);
+                    }
                 }
             }
         }
-
         return true;
     }
 
@@ -658,7 +653,7 @@ public class BTree<T extends Comparable<T>> {
         }
 
         private T removeKey(int index) {
-            if (index >= keysSize)
+            if (index >= keysSize || index < 0)
                 return null;
             T value = keys[index];
             for (int i = index + 1; i < keysSize; i++) {
@@ -675,7 +670,7 @@ public class BTree<T extends Comparable<T>> {
         }
 
         private Node<T> getChild(int index) {
-            if (index >= childrenSize)
+            if (index >= childrenSize || index < 0)
                 return null;
             return children[index];
         }
