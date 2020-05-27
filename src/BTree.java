@@ -97,8 +97,56 @@ public class BTree<T extends Comparable<T>> {
 
     //Task 2.2
     public boolean insert2pass(T value) {
-        // TODO: implement your code here
-        return false;
+       if(root == null){
+           root = new Node<T>(null, maxKeySize,maxChildrenSize);
+       } else {
+           Node<T> deepestAvilableNode = null;
+           Node<T> node = root;
+           while(node != null){
+               if(node.numberOfKeys() < maxKeySize)
+                   deepestAvilableNode = node;
+               if(node.numberOfChildren() == 0){
+                   //reached a leaf
+                   if(node.numberOfKeys() >= maxKeySize){
+                       twoPassSplit(deepestAvilableNode, value);
+                   }
+                   node.addKey(value);
+                   break;
+               }
+               //searching the leaf to insert value
+
+               //at the left most route
+               T smallestInNode = node.getKey(0);
+               if(value.compareTo(smallestInNode) <= 0){
+                   node = node.getChild(0);
+                   continue;
+               }
+
+               //at the right most path
+               T largestInNode = node.getKey(node.numberOfKeys()-1);
+               if(value.compareTo(largestInNode) > 0){
+                   node = node.getChild(node.numberOfChildren()-1);
+                   continue;
+               }
+
+               //in between keys
+               for (int i = 1; i < node.numberOfKeys(); i++) {
+                   T prev = node.getKey(i - 1);
+                   T next = node.getKey(i);
+                   if (value.compareTo(prev) > 0 && value.compareTo(next) <= 0) {
+                       node = node.getChild(i);
+                       break;
+                   }
+               }
+           }
+       }
+       size++;
+       return true;
+    }
+
+    private void twoPassSplit(Node<T> ParentNodeToSplit, T value){
+
+
     }
 
     /**
@@ -362,7 +410,7 @@ public class BTree<T extends Comparable<T>> {
      * @param node with children to combined.
      * @return True if combined successfully.
      */
-    private boolean combined(Node<T> node) { //this method is marge and shift togather and it prefers the right before the left. and deletes first and then correcting
+    private boolean combined(Node<T> node) {
         Node<T> parent = node.parent;
         int borrowerNodeIndex = parent.indexOf(node);
         int leftBrotherIndex = borrowerNodeIndex - 1;
