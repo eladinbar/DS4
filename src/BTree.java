@@ -3,6 +3,8 @@ import org.graalvm.compiler.nodes.calc.LeftShiftNode;
 import javax.naming.ldap.Rdn;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 @SuppressWarnings("unchecked")
 public class BTree<T extends Comparable<T>> {
@@ -97,56 +99,76 @@ public class BTree<T extends Comparable<T>> {
 
     //Task 2.2
     public boolean insert2pass(T value) {
-       if(root == null){
-           root = new Node<T>(null, maxKeySize,maxChildrenSize);
-       } else {
-           Node<T> deepestAvilableNode = null;
-           Node<T> node = root;
-           while(node != null){
-               if(node.numberOfKeys() < maxKeySize)
-                   deepestAvilableNode = node;
-               if(node.numberOfChildren() == 0){
-                   //reached a leaf
-                   if(node.numberOfKeys() >= maxKeySize){
-                       twoPassSplit(deepestAvilableNode, value);
-                   }
-                   node.addKey(value);
-                   break;
-               }
-               //searching the leaf to insert value
+        if (root == null) {
+            root = new Node<T>(null, maxKeySize, maxChildrenSize);
+        } else {
+            Queue<Node<T>> queueNodeToSplit = new ConcurrentLinkedQueue<>();
+            Node<T> node = root;
+            queueNodeToSplit.add(node);
+            while (node != null) {
+                if (node.numberOfKeys() < maxKeySize)
+                    queueNodeToSplit.clear();
+                if (node.numberOfChildren() == 0) {
+                    //reached a leaf
+                    Node<T> parent = node.parent;
+                    int indexOfNode = node.parent.indexOf(node);
+                    if (node.numberOfKeys() >= maxKeySize) {
+                        queueNodeToSplit.add(node);
+                        twoPassSplit(queueNodeToSplit);
 
-               //at the left most route
-               T smallestInNode = node.getKey(0);
-               if(value.compareTo(smallestInNode) <= 0){
-                   node = node.getChild(0);
-                   continue;
-               }
+                        //adding value to the correct half
+                        if (value.compareTo(parent.getKey(indexOfNode)) <= 0) {
+                            parent.getChild(indexOfNode).addKey(value);
+                        } else {
+                            parent.getChild(indexOfNode + 1).addKey(value);
+                        }
+                    }
+                    node.addKey(value);
+                    break;
+                }
 
-               //at the right most path
-               T largestInNode = node.getKey(node.numberOfKeys()-1);
-               if(value.compareTo(largestInNode) > 0){
-                   node = node.getChild(node.numberOfChildren()-1);
-                   continue;
-               }
+                //searching the leaf to insert value
+                //at the left most route
+                T smallestInNode = node.getKey(0);
+                if (value.compareTo(smallestInNode) <= 0) {
+                    if (node.numberOfKeys() >= maxKeySize)
+                        queueNodeToSplit.add(node);
+                    node = node.getChild(0);
+                    continue;
+                }
 
-               //in between keys
-               for (int i = 1; i < node.numberOfKeys(); i++) {
-                   T prev = node.getKey(i - 1);
-                   T next = node.getKey(i);
-                   if (value.compareTo(prev) > 0 && value.compareTo(next) <= 0) {
-                       node = node.getChild(i);
-                       break;
-                   }
-               }
-           }
-       }
-       size++;
-       return true;
+                //at the right most path
+                T largestInNode = node.getKey(node.numberOfKeys() - 1);
+                if (value.compareTo(largestInNode) > 0) {
+                    if (node.numberOfKeys() >= maxKeySize)
+                        queueNodeToSplit.add(node);
+                    node = node.getChild(node.numberOfChildren() - 1);
+                    continue;
+                }
+
+                //in between keys
+                for (int i = 1; i < node.numberOfKeys(); i++) {
+                    T prev = node.getKey(i - 1);
+                    T next = node.getKey(i);
+                    if (value.compareTo(prev) > 0 && value.compareTo(next) <= 0) {
+                        if (node.numberOfKeys() >= maxKeySize)
+                            queueNodeToSplit.add(node);
+                        node = node.getChild(i);
+                        break;
+                    }
+                }
+            }
+        }
+        size++;
+        return true;
     }
 
-    private void twoPassSplit(Node<T> ParentNodeToSplit, T value){
-
-
+    private void twoPassSplit(Queue<Node<T>> queuedNodesToSplit) {
+        Node<T> toSplit;
+        while (!queuedNodesToSplit.isEmpty()) {
+            toSplit = queuedNodesToSplit.remove();
+            split(toSplit);
+        }
     }
 
     /**
