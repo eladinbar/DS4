@@ -9,7 +9,7 @@ public class BTree<T extends Comparable<T>> {
     // Default to 2-3 Tree
     private int minKeySize = 1;
     private int minChildrenSize = minKeySize + 1; // 2
-    private int maxKeySize = (2 * minKeySize) + 1; // 2 //Edit to reflect actual 't' value as shown in class according to the forum t=2 by default
+    private int maxKeySize = (2 * minKeySize) + 1; // 2 //Edit to reflect actual 't' value as shown in class - according to the forum t=2 by default
     private int maxChildrenSize = maxKeySize + 1; // 3
 
     private Node<T> root = null;
@@ -41,21 +41,16 @@ public class BTree<T extends Comparable<T>> {
     //Task 2.1
     public boolean insert(T value) {
         if (root == null) {
-            root = new Node<T>(null, maxKeySize, maxChildrenSize);
+            root = new Node<>(null, maxKeySize, maxChildrenSize);
             root.addKey(value);
         } else {
             Node<T> node = root;
             while (node != null) {
+                if (node.numberOfKeys() == maxKeySize) //Need to split up
+                    node = split(node);
                 if (node.numberOfChildren() == 0) {
-//                    if (node.numberOfKeys() == maxKeySize)
-//                        split(node);
-//                    node.addKey(value);
-                    if (node.numberOfKeys() <= maxKeySize) {
-                        // A-OK
-                        break;
-                    }
-                    // Need to split up
-                    split(node);
+                    // A-OK
+                    node.addKey(value);
                     break;
                 }
                 // Navigate
@@ -68,19 +63,18 @@ public class BTree<T extends Comparable<T>> {
                 }
 
                 // Greater
-                int numberOfKeys = node.numberOfKeys();
-                int last = numberOfKeys - 1;
+                int last = node.numberOfKeys() - 1;
                 T greater = node.getKey(last);
                 if (value.compareTo(greater) > 0) {
-                    node = node.getChild(numberOfKeys);
+                    node = node.getChild(node.numberOfChildren() - 1); //Original - node.numberOfKeys()
                     continue;
                 }
 
                 // Search internal nodes
                 for (int i = 1; i < node.numberOfKeys(); i++) {
-                    T prev = node.getKey(i - 1);
-                    T next = node.getKey(i);
-                    if (value.compareTo(prev) > 0 && value.compareTo(next) <= 0) {
+                    T lower = node.getKey(i - 1);
+                    T upper = node.getKey(i);
+                    if (value.compareTo(lower) > 0 && value.compareTo(upper) <= 0) {
                         node = node.getChild(i);
                         break;
                     }
@@ -281,13 +275,13 @@ public class BTree<T extends Comparable<T>> {
      * @returns the parent of the split node
      */
     private Node<T> split(Node<T> nodeToSplit) {
-        Node<T> node = nodeToSplit;
+        Node<T> node = nodeToSplit;                       /**Redundant declaration? No setting actions are performed.*/
         int numberOfKeys = node.numberOfKeys();
-        //finding the middle key to move to the parent nude
+        //finding the middle key to move to the parent node
         int middleKey = numberOfKeys / 2;
         T middleKeyValue = node.getKey(middleKey);
 
-        //creating the new node that needs to be of the left of the middleKey
+        //creating the new node that needs to be to the left of the middleKey
         Node<T> leftHalf = new Node<>(null, maxKeySize, maxChildrenSize);
         for (int i = 0; i < middleKey; i++) {
             leftHalf.addKey(node.getKey(i));
@@ -300,7 +294,7 @@ public class BTree<T extends Comparable<T>> {
             }
         }
 
-        //creating the new node that needs to be of the right of the middleKey
+        //creating the new node that needs to be to the right of the middleKey
         Node<T> rightHalf = new Node<>(null, maxKeySize, maxChildrenSize);
         for (int i = middleKey + 1; i < numberOfKeys; i++) {
             rightHalf.addKey(node.getKey(i));
@@ -321,13 +315,14 @@ public class BTree<T extends Comparable<T>> {
             newRoot.addChild(rightHalf);
             root = newRoot;
             return root;
-            //splitting an internal node
-        } else {
+        }
+        //splitting an internal node
+        else {
             Node<T> parent = node.parent;
             parent.addKey(middleKeyValue);
             parent.addChild(leftHalf);
             parent.addChild(rightHalf);
-            parent.removeChild(node);
+            parent.removeChild(node); /**Remove needs to occur first? Child addition is performed beyond maxChildrenSize? */
             return parent;
         }
     }
