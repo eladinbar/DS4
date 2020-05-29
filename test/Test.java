@@ -2,26 +2,27 @@ import org.junit.*;
 
 public class Test {
 
-    private BTree<Integer> tree;
+    BTree<Integer> tree = createBTee();
 
-    @Before
-    public void createBTee(){
-        tree = new BTree<>(5);
-        for (int i = 0; i <= 200 ; i++) {
-            tree.add((int) (10000*Math.random()));
-        }
+    @BeforeClass
+    public static BTree<Integer> createBTee(){
+        BTree<Integer> tree = new BTree<>();
+        tree.insert2pass(10);
+        tree.insert2pass(3);
+        tree.insert2pass(17);
+        tree.insert2pass(7);
+        tree.insert2pass(12);
+        tree.insert2pass(2);
+        tree.insert2pass(5);
+        tree.insert2pass(1);
+        tree.insert2pass(24);
+        tree.insert2pass(9);
+        tree.insert2pass(-2);
+        tree.insert2pass(11);
+        tree.insert2pass(15);
+        tree.insert2pass(60);
+        tree.insert2pass(35);
+
+        return tree;
     }
-
-    @org.junit.Test
-    public void printTree(){
-        System.out.println(tree.toString());
-        int i = 5;
-        System.out.println(i);
-        int j = -i;
-        System.out.println(j);
-
-    }
-
-
-
 }

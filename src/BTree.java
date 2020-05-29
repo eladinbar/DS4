@@ -1,6 +1,3 @@
-import org.graalvm.compiler.nodes.calc.LeftShiftNode;
-
-import javax.naming.ldap.Rdn;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Queue;
@@ -17,6 +14,10 @@ public class BTree<T extends Comparable<T>> {
 
     private Node<T> root = null;
     private int size = 0;
+
+    public Node<T> getRoot() {
+        return root;
+    }
 
     /**
      * Constructor for B-Tree which defaults to a 2-3 B-Tree.
@@ -101,30 +102,48 @@ public class BTree<T extends Comparable<T>> {
     public boolean insert2pass(T value) {
         if (root == null) {
             root = new Node<T>(null, maxKeySize, maxChildrenSize);
+            root.addKey(value);
         } else {
             Queue<Node<T>> queueNodeToSplit = new ConcurrentLinkedQueue<>();
             Node<T> node = root;
-            queueNodeToSplit.add(node);
             while (node != null) {
                 if (node.numberOfKeys() < maxKeySize)
                     queueNodeToSplit.clear();
                 if (node.numberOfChildren() == 0) {
                     //reached a leaf
                     Node<T> parent = node.parent;
-                    int indexOfNode = node.parent.indexOf(node);
-                    if (node.numberOfKeys() >= maxKeySize) {
-                        queueNodeToSplit.add(node);
-                        twoPassSplit(queueNodeToSplit);
-
-                        //adding value to the correct half
-                        if (value.compareTo(parent.getKey(indexOfNode)) <= 0) {
-                            parent.getChild(indexOfNode).addKey(value);
+                    if (parent != null) {
+                        //inserting at a leaf
+                        if (node.numberOfKeys() >= maxKeySize) {
+                            //splitting from the first node that need to be split to the leaf
+                            queueNodeToSplit.add(node);
+                            parent = twoPassSplit(queueNodeToSplit);
+                            System.out.println(this); //debug
+                            //adding value to the correct half of the split node
+                            parent.getChild(findChildIndexToInsert(parent, value)).addKey(value);
+                            break;
                         } else {
-                            parent.getChild(indexOfNode + 1).addKey(value);
+                            node.addKey(value);
+                            break;
+                        }
+                    } else {
+                        //inserting at root
+                        if (node.numberOfKeys() >= maxKeySize) {
+                            //splitting root
+                            queueNodeToSplit.add(node);
+                            twoPassSplit(queueNodeToSplit);
+                            if (value.compareTo(root.getKey(0)) <= 0) {
+                                root.getChild(0).addKey(value);
+                            } else {
+                                root.getChild(1).addKey(value);
+                            }
+                            break;
+                        } else {
+                            //not splitting root
+                            node.addKey(value);
+                            break;
                         }
                     }
-                    node.addKey(value);
-                    break;
                 }
 
                 //searching the leaf to insert value
@@ -163,12 +182,41 @@ public class BTree<T extends Comparable<T>> {
         return true;
     }
 
-    private void twoPassSplit(Queue<Node<T>> queuedNodesToSplit) {
+    //splitting all the nodes in the queue according to 2passInsert logic.
+    //returns the new parent of the last node that split
+    private Node<T> twoPassSplit(Queue<Node<T>> queuedNodesToSplit) {
         Node<T> toSplit;
+        Node<T> parentOfLastSplit = root;
         while (!queuedNodesToSplit.isEmpty()) {
             toSplit = queuedNodesToSplit.remove();
-            split(toSplit);
+            parentOfLastSplit = split(toSplit);
         }
+        return parentOfLastSplit;
+    }
+
+    private int findChildIndexToInsert(Node<T> node, T value){
+        //lest most child
+        T smallestInNode = node.getKey(0);
+        T largestInNode = node.getKey(node.numberOfKeys() - 1);
+        if (value.compareTo(smallestInNode) <= 0) {
+            return 0;
+        }
+        //right most child
+        else if (value.compareTo(largestInNode) > 0) {
+            return node.numberOfChildren() - 1;
+        }
+        //in between
+        else {
+            for (int i = 1; i < node.numberOfKeys(); i++) {
+                T prev = node.getKey(i - 1);
+                T next = node.getKey(i);
+                if (value.compareTo(prev) > 0 && value.compareTo(next) <= 0) {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
     }
 
     /**
@@ -218,6 +266,7 @@ public class BTree<T extends Comparable<T>> {
                         break;
                     }
                 }
+
             }
         }
 
@@ -230,8 +279,9 @@ public class BTree<T extends Comparable<T>> {
      * The node's key size is greater than maxKeySize, split down the middle.
      *
      * @param nodeToSplit to split.
+     * @returns the parent of the split node
      */
-    private void split(Node<T> nodeToSplit) {
+    private Node<T> split(Node<T> nodeToSplit) {
         Node<T> node = nodeToSplit;
         int numberOfKeys = node.numberOfKeys();
         //finding the middle key to move to the parent nude
@@ -254,13 +304,13 @@ public class BTree<T extends Comparable<T>> {
         //creating the new node that needs to be of the right of the middleKey
         Node<T> rightHalf = new Node<>(null, maxKeySize, maxChildrenSize);
         for (int i = middleKey + 1; i < numberOfKeys; i++) {
-            leftHalf.addKey(node.getKey(i));
+            rightHalf.addKey(node.getKey(i));
         }
-        //moving the children to the leftHalf
+        //moving the children to the rightHalf
         if (node.numberOfChildren() > 0) {
             for (int i = middleKey + 1; i < node.numberOfChildren(); i++) {
                 Node<T> child = node.getChild(i);
-                leftHalf.addChild(child);
+                rightHalf.addChild(child);
             }
         }
 
@@ -271,6 +321,7 @@ public class BTree<T extends Comparable<T>> {
             newRoot.addChild(leftHalf);
             newRoot.addChild(rightHalf);
             root = newRoot;
+            return root;
             //splitting an internal node
         } else {
             Node<T> parent = node.parent;
@@ -278,6 +329,7 @@ public class BTree<T extends Comparable<T>> {
             parent.addChild(leftHalf);
             parent.addChild(rightHalf);
             parent.removeChild(node);
+            return parent;
         }
     }
 
