@@ -1,0 +1,74 @@
+public class Main {
+
+
+    public static void main(String[] args) {
+        BTree<Integer> tree = new BTree<>(2);
+        tree.insert2pass(500);
+        System.out.println(tree);
+        tree.insert2pass(400);
+        System.out.println(tree);
+        tree.insert2pass(600);
+        System.out.println(tree);
+        tree.insert2pass(300);
+        System.out.println(tree);
+        tree.insert2pass(700);
+        System.out.println(tree);
+        tree.insert2pass(200);
+        System.out.println(tree);
+        tree.insert2pass(800);
+        System.out.println(tree);
+        tree.insert2pass(100);
+        System.out.println(tree);
+        tree.insert2pass(900);
+        System.out.println(tree);
+        tree.insert2pass(450);
+        System.out.println(tree);
+        tree.insert2pass(650);
+        System.out.println(tree);
+        tree.insert2pass(350);
+        System.out.println(tree);
+        tree.insert2pass(750);
+        System.out.println(tree);
+        tree.insert2pass(250);
+        System.out.println(tree);
+        tree.insert2pass(850);
+        System.out.println(tree);
+        tree.insert2pass(150);
+        System.out.println(tree);
+        tree.insert2pass(950);
+        System.out.println(tree);
+        tree.insert2pass(50);
+        System.out.println(tree);
+        tree.insert2pass(1000);
+        System.out.println(tree);
+        tree.insert2pass(525);
+        System.out.println(tree);
+        tree.insert2pass(475);
+        System.out.println(tree);
+        tree.insert2pass(575);
+        System.out.println(tree);
+        tree.insert2pass(425);
+        System.out.println(tree);
+        tree.insert2pass(625);
+        System.out.println(tree);
+        tree.insert2pass(490);
+        System.out.println(tree);
+        tree.insert2pass(180);
+        System.out.println(tree);
+        tree.insert2pass(980);
+        System.out.println(tree);
+        tree.insert2pass(990);
+        System.out.println(tree);
+        tree.insert2pass(160);
+        System.out.println(tree);
+        tree.insert2pass(170);
+        System.out.println(tree);
+        tree.insert2pass(165);
+        System.out.println(tree);
+        tree.insert2pass(145);
+        System.out.println(tree);
+        tree.insert2pass(175);
+        System.out.println(tree);
+
+    }
+}
