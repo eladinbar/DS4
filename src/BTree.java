@@ -115,10 +115,9 @@ public class BTree<T extends Comparable<T>> {
                     if (parent != null) {
                         //inserting at a leaf
                         if (node.numberOfKeys() >= maxKeySize) {
-                            //splitting from the first node that need to be split to the leaf
+                            //splitting from the first node that need to be split until the leaf
                             queueNodeToSplit.add(node);
                             parent = twoPassSplit(queueNodeToSplit);
-                            System.out.println(this); //debug
                             //adding value to the correct half of the split node
                             parent.getChild(findChildIndexToInsert(parent, value)).addKey(value);
                             break;
