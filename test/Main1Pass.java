@@ -1,6 +1,6 @@
 public class Main1Pass {
     public static void main(String[] args) {
-        BTree<Integer> bt = new BTree();
+        BTree<Integer> bt = new BTree();    System.out.println(bt.toString() + "\n");
         System.out.println("Inserting \n");
         bt.insert(1);  System.out.println("Inserting 1 \n" + bt.toString());
         bt.insert(2);  System.out.println("Inserting 2 \n" + bt.toString());
@@ -24,6 +24,7 @@ public class Main1Pass {
         bt.delete(8);   System.out.println("Deleting 8 \n" + bt.toString());
         bt.delete(11);   System.out.println("Deleting 11 \n" + bt.toString());
         bt.delete(10);   System.out.println("Deleting 10 \n" + bt.toString());
+        bt.delete(5);   System.out.println("Deleting 5 \n" + bt.toString());
         bt.delete(12);   System.out.println("Deleting 12 \n" + bt.toString());
         bt.delete(1);   System.out.println("Deleting 1 \n" + bt.toString());
         bt.delete(71);   System.out.println("Deleting 71 \n" + bt.toString());

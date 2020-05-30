@@ -96,7 +96,10 @@ public class BTree<T extends Comparable<T>> {
     private T delete (T value, Node<T> nodeToDelete) {
         if (nodeToDelete == null)
             return null;
-
+        else if (nodeToDelete == root & nodeToDelete.numberOfKeys()==1 & nodeToDelete.numberOfChildren()==0) {
+            root = null;
+            return value;
+        }
         Node<T> node = root;
         while (node!=nodeToDelete) {
             for (int i=0; i<node.numberOfKeys(); i++) {
@@ -167,7 +170,7 @@ public class BTree<T extends Comparable<T>> {
 
         size--;
 
-        return null;
+        return value;
     }
 
     private T successor (T value) { //Assumes only calls from delete() are received
@@ -610,6 +613,13 @@ public class BTree<T extends Comparable<T>> {
      */
     private Node<T> combined(Node<T> node) {
         Node<T> parent = node.parent;
+        boolean makeNewRoot = false;
+        if (parent == null) {
+            parent = node;
+            node = node.getChild(0);
+            if (root.numberOfKeys()==1)
+                makeNewRoot = true;
+        }
         int borrowerNodeIndex = parent.indexOf(node);
         int leftBrotherIndex = borrowerNodeIndex - 1;
         int rightBrotherIndex = borrowerNodeIndex + 1;
@@ -623,7 +633,7 @@ public class BTree<T extends Comparable<T>> {
             Node<T> leftBrotherRightChild = leftBrother.getChild(leftBrother.childrenSize - 1);
             int separatingKeyIndex = leftBrotherIndex;
             T parentKeyToMove = parent.removeKey(separatingKeyIndex);
-            parent.addKey(leftBrotherMaxKey);
+            parent.addKey(leftBrother.removeKey(leftBrotherMaxKey));
             node.addKey(parentKeyToMove);
             node.addChild(leftBrotherRightChild);
         }
@@ -633,7 +643,7 @@ public class BTree<T extends Comparable<T>> {
             Node<T> rightBrotherLeftChild = rightBrother.getChild(0);
             int separatingKeyIndex = borrowerNodeIndex;
             T parentKeyToMove = parent.removeKey(separatingKeyIndex);
-            parent.addKey(rightBrotherMinKey);
+            parent.addKey(rightBrother.removeKey(rightBrotherMinKey));
             node.addKey(parentKeyToMove);
             node.addChild(rightBrotherLeftChild);
         }
@@ -704,6 +714,10 @@ public class BTree<T extends Comparable<T>> {
                 parent.removeChild(rightBrotherIndex);
                 parent.removeChild(borrowerNodeIndex);
                 parent.addChild(productNode);
+            }
+            if (makeNewRoot) {
+                root = productNode;
+                productNode.parent = null;
             }
             return productNode;
         }
