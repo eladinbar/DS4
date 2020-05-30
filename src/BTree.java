@@ -107,8 +107,10 @@ public class BTree<T extends Comparable<T>> {
                     node = node.getChild(i);
                     break;
                 }
-                else if (node.childrenSize == i+2)
-                    node = node.getChild(i+1);
+                else if (node.childrenSize == i+2) {
+                    node = node.getChild(i + 1);
+                    break;
+                }
             }
             if (node!=nodeToDelete && node.numberOfKeys() == minKeySize) {
                 node = combined(node);
