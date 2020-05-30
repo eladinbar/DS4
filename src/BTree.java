@@ -88,8 +88,44 @@ public class BTree<T extends Comparable<T>> {
     }
 
     public T delete(T value) {
-        // TODO: implement your code here
-        return null;
+//        T removed = null;
+//        Node<T> node = this.getNode(value);
+//        removed = remove(value, node);
+//        return removed;
+
+        //
+
+        Node<T> node = this.getNode(value);
+        if (node == null)
+            return null;
+
+        int valueIndex = node.indexOf(value);
+        T removed = node.removeKey(value); //Move down?
+        if (node.numberOfChildren() == 0) {
+            // leaf node
+            if (node.parent != null && node.numberOfKeys() == minKeySize) {
+                this.combined(node);
+            } else if (node.parent == null && node.numberOfKeys() == 0) {
+                // Removing root node with no keys or children
+                root = null;
+            }
+        } else {
+            // internal node
+            Node<T> lesser = node.getChild(valueIndex);
+            Node<T> greatest = this.getGreatestNode(lesser);
+            T replaceValue = this.removeGreatestValue(greatest);
+            node.addKey(replaceValue);
+            if (greatest.parent != null && greatest.numberOfKeys() < minKeySize) {
+                this.combined(greatest);
+            }
+            if (greatest.numberOfChildren() > maxChildrenSize) {
+                this.split(greatest);
+            }
+        }
+
+        size--;
+
+        return removed;
     }
 
     //Task 2.2
@@ -188,7 +224,7 @@ public class BTree<T extends Comparable<T>> {
     }
 
     private int findChildIndexToInsert(Node<T> node, T value){
-        //lest most child
+        //left most child
         T smallestInNode = node.getKey(0);
         T largestInNode = node.getKey(node.numberOfKeys() - 1);
         if (value.compareTo(smallestInNode) <= 0) {
@@ -478,7 +514,7 @@ public class BTree<T extends Comparable<T>> {
      * @param node with children to combined.
      * @return True if combined successfully.
      */
-    private boolean combined(Node<T> node) {
+    private boolean combined(Node<T> node) { /**No return false statement - perhaps change return value to T? */
         Node<T> parent = node.parent;
         int borrowerNodeIndex = parent.indexOf(node);
         int leftBrotherIndex = borrowerNodeIndex - 1;
@@ -487,7 +523,7 @@ public class BTree<T extends Comparable<T>> {
         Node<T> leftBrother = parent.getChild(leftBrotherIndex);
         Node<T> rightBrother = parent.getChild(rightBrotherIndex);
 
-        //try to borrow from the left brother
+        //try to borrow key from the left brother
         if (leftBrotherIndex >= 0 && leftBrother.numberOfKeys() > minKeySize) {
             T leftBrotherMaxKey = leftBrother.getKey(leftBrother.keysSize - 1);
             Node<T> leftBrotherRightChild = leftBrother.getChild(leftBrother.childrenSize - 1);
@@ -496,8 +532,9 @@ public class BTree<T extends Comparable<T>> {
             parent.addKey(leftBrotherMaxKey);
             node.addKey(parentKeyToMove);
             node.addChild(leftBrotherRightChild);
-            //try to borrow fromm the right brother
-        } else if (rightBrotherIndex < parent.numberOfChildren() && rightBrother.numberOfKeys() > minKeySize) {
+        }
+        //try to borrow key from the right brother
+        else if (rightBrotherIndex < parent.numberOfChildren() && rightBrother.numberOfKeys() > minKeySize) {
             T rightBrotherMinKey = rightBrother.getKey(0);
             Node<T> rightBrotherLeftChild = rightBrother.getChild(0);
             int separatingKeyIndex = borrowerNodeIndex;
@@ -505,47 +542,51 @@ public class BTree<T extends Comparable<T>> {
             parent.addKey(rightBrotherMinKey);
             node.addKey(parentKeyToMove);
             node.addChild(rightBrotherLeftChild);
-            //can't borrow from brothers. try to marge nodes
-        } else {
-            Node<T> productNode = new Node<>(null, maxKeySize, maxChildrenSize); //creating an empty node from the merging
-            //try to marge with left brother if exist
+        }
+        //can't borrow key from brothers, merge nodes
+        else {
+            /**productNode never seems to be assigned a parent nor does the parent remove its old children.
+             * Change parent in constructor from null to 'parent'? */
+            Node<T> productNode = new Node<>(null, maxKeySize, maxChildrenSize); //creating an empty node for merging
+            //try to merge with left brother if it exists
             if (leftBrotherIndex >= 0) {
-                int middleKeyIndex = leftBrotherIndex;
-                productNode.addKey(parent.removeKey(middleKeyIndex));
-                //adding the left brother keys
+                int borrowedKeyIndex = leftBrotherIndex;
+                productNode.addKey(parent.removeKey(borrowedKeyIndex));
+                //adding the left brother's keys
                 for (int i = 0; i < leftBrother.numberOfKeys(); i++) {
                     T key = leftBrother.getKey(i);
                     productNode.addKey(key);
                 }
-                // if leftBrother have children move them to productNode
+                // if leftBrother has children, move them to productNode
                 if (leftBrother.numberOfChildren() > 0) {
                     for (int i = 0; i < leftBrother.numberOfChildren(); i++) {
                         Node<T> child = leftBrother.getChild(i);
                         productNode.addChild(child);
                     }
                 }
-                //adding the node keys to the product node
+                //adding the node's keys to the product node
                 for (int i = 0; i < node.numberOfKeys(); i++) {
                     T key = node.getKey(i);
                     productNode.addKey(key);
                 }
-                // if node have children then move them to the productNode
+                //if node has children, move them to productNode
                 if (node.numberOfChildren() > 0) {
                     for (int i = 0; i < node.numberOfChildren(); i++) {
                         Node<T> child = node.getChild(i);
                         productNode.addChild(child);
                     }
                 }
-            } else {
-                //merging with the right brother
-                int middleKeyIndex = borrowerNodeIndex;
-                productNode.addKey(parent.removeKey(middleKeyIndex));
-                //adding the right brother keys
-                for (int i = 0; i < rightBrother.numberOfChildren(); i++) {
+            }
+            //else merge with the right brother
+            else {
+                int borrowedKeyIndex = borrowerNodeIndex; /**RightBrotherIndex? */
+                productNode.addKey(parent.removeKey(borrowedKeyIndex));
+                //adding the right brother's keys
+                for (int i = 0; i < rightBrother.numberOfChildren(); i++) { /**rightBrother.numberOfKeys()? */
                     T key = rightBrother.getKey(i);
                     productNode.addKey(key);
                 }
-                //if rightBrother have children move them to productNode
+                //if rightBrother has children, move them to productNode
                 if (rightBrother.numberOfChildren() > 0) {
                     for (int i = 0; i < rightBrother.numberOfChildren(); i++) {
                         Node<T> child = rightBrother.getChild(i);
@@ -553,12 +594,12 @@ public class BTree<T extends Comparable<T>> {
                     }
                 }
 
-                //adding the node keys to the product node
+                //adding the node's keys to the product node
                 for (int i = 0; i < node.numberOfKeys(); i++) {
                     T key = node.getKey(i);
                     productNode.addKey(key);
                 }
-                // if node have children then move them to the productNode
+                //if node has children, move them to productNode
                 if (node.numberOfChildren() > 0) {
                     for (int i = 0; i < node.numberOfChildren(); i++) {
                         Node<T> child = node.getChild(i);
@@ -584,7 +625,7 @@ public class BTree<T extends Comparable<T>> {
                 return i - 1;
         }
         return node.numberOfKeys() - 1;
-        //not returning -1 in if there is no key
+        //not returning -1 if there is no key
     }
 
     /**

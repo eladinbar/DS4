@@ -1,4 +1,4 @@
-public class Main {
+public class Main2Pass {
 
 
     public static void main(String[] args) {
