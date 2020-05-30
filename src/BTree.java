@@ -88,28 +88,33 @@ public class BTree<T extends Comparable<T>> {
     }
 
     public T delete(T value) {
-//        T removed = null;
-//        Node<T> node = this.getNode(value);
-//        removed = remove(value, node);
-//        return removed;
+        T removed = null;
+        Node<T> nodeToDelete = this.getNode(value);
+        removed = remove(value, nodeToDelete);
+        return removed;
+    }
 
-        //
-
-        Node<T> node = this.getNode(value);
-        if (node == null)
+    public T delete (T value, Node<T> nodeToDelete) {
+        if (nodeToDelete == null)
             return null;
 
+        Node<T> node = root;
+        while (node!=nodeToDelete) {
+
+        }
         int valueIndex = node.indexOf(value);
         T removed = node.removeKey(value); //Move down?
         if (node.numberOfChildren() == 0) {
             // leaf node
             if (node.parent != null && node.numberOfKeys() == minKeySize) {
                 this.combined(node);
-            } else if (node.parent == null && node.numberOfKeys() == 0) {
+            }
+            else if (node.parent == null && node.numberOfKeys() == 0) {
                 // Removing root node with no keys or children
                 root = null;
             }
-        } else {
+        }
+        else {
             // internal node
             Node<T> lesser = node.getChild(valueIndex);
             Node<T> greatest = this.getGreatestNode(lesser);
@@ -383,7 +388,7 @@ public class BTree<T extends Comparable<T>> {
     private T remove(T value, Node<T> node) {
         if (node == null) return null;
 
-        T removed = null; //Redundant
+        T removed = null;
         int index = node.indexOf(value);
         removed = node.removeKey(value);
         if (node.numberOfChildren() == 0) {
@@ -527,7 +532,7 @@ public class BTree<T extends Comparable<T>> {
         if (leftBrotherIndex >= 0 && leftBrother.numberOfKeys() > minKeySize) {
             T leftBrotherMaxKey = leftBrother.getKey(leftBrother.keysSize - 1);
             Node<T> leftBrotherRightChild = leftBrother.getChild(leftBrother.childrenSize - 1);
-            int separatingKeyIndex = leftBrotherIndex;
+            int separatingKeyIndex = leftBrotherIndex; /**Actually needs to be borrowerNodeIndex? */
             T parentKeyToMove = parent.removeKey(separatingKeyIndex);
             parent.addKey(leftBrotherMaxKey);
             node.addKey(parentKeyToMove);
