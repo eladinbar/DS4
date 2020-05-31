@@ -49,7 +49,9 @@ public class CuckooHashing {
     	}
         if (find(x))
             return false;
-
+        //Clear stack in case previous successful operation was delete
+        if (undoStack.peek() instanceof UndoDeletionOperator)
+            undoStack.clear();
         return insertHelper1(x);
     }
     
@@ -65,9 +67,10 @@ public class CuckooHashing {
             	cycle_tester.add(i, new ArrayList<String>());
             }
             boolean cycle=false;
-            
-            int MAXTRIES  = this.size();
-            for (int count = 0; count <= MAXTRIES; count++) {
+
+            UndoInsertionOperator insertionOperator = new UndoInsertionOperator();
+            int MAX_TRIES  = this.size();
+            for (int count = 0; count <= MAX_TRIES; count++) {
                 for (int i = 0; i < numHashFunctions; i++) {
                     pos = myhash(x, i);
                     if(isCycle(cycle_tester,x,pos))
@@ -79,6 +82,8 @@ public class CuckooHashing {
                     if (array[pos] == null) {
                         array[pos] = x;
                         currentSize++;
+                        insertionOperator.add(null, pos);
+                        undoStack.push(insertionOperator);
                         return true;
                     }
                     
@@ -92,10 +97,12 @@ public class CuckooHashing {
                 // none of the spots are available, kick out item in kick_pos
                 String tmp = array[kick_pos];
                 array[kick_pos] = x;
+                insertionOperator.add(tmp, kick_pos);
                 x = tmp;
             }
             //insertion got into a cycle use overflow list
             this.stash.add(x);
+            undoStack.push(insertionOperator);
             return true;
         }
     }
@@ -181,6 +188,9 @@ public class CuckooHashing {
         int pos = findPos(x);
         if(pos==-1)
         	return false;
+        //Clear stack in case previous successful operation was insert
+        if (undoStack.peek() instanceof UndoInsertionOperator)
+            undoStack.clear();
         if (pos<this.capacity()) {
             array[pos] = null;
 			currentSize--;
