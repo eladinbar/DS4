@@ -250,5 +250,12 @@ public class CuckooHashing {
 
         return true;
     }
-	
+
+    public String[] getArray() {
+        return array;
+    }
+
+    public ArrayList<String> getStash() {
+        return stash;
+    }
 }

@@ -6,7 +6,13 @@ public class UndoInsertionOperator implements UndoOperator {
 
     @Override
     public void undo(CuckooHashing table) {
+        while(!undoKickOperatorStack.empty()){
+            undoKickOperatorStack.pop().undo(table);
+        }
+    }
 
+    public void add(String value, int index){
+        undoKickOperatorStack.push(new UndoKickOperator(value,index));
     }
 
 }
