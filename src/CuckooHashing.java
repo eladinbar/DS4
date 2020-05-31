@@ -13,6 +13,7 @@ public class CuckooHashing {
     private String[] array; // The array of elements
     private int currentSize; // The number of occupied cells
     private ArrayList<String> stash; //List of items that couldn't find a place
+    private Stack<UndoOperator> undoStack;
     
     /**
      * Construct the hash table.
@@ -33,6 +34,7 @@ public class CuckooHashing {
         makeEmpty();
         hashFunctions = hf;
         numHashFunctions = hf.getNumberOfFunctions();
+        undoStack = new Stack<>();
     }
     
     /**
@@ -102,7 +104,7 @@ public class CuckooHashing {
     }
 	
 	public void undo() {
-		// TODO: implement your code here
+		undoStack.pop().undo(this);
 	}
 
     /**

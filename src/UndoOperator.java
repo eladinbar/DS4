@@ -1,3 +1,3 @@
 public interface UndoOperator {
-    void undo();
+    void undo(CuckooHashing table);
 }

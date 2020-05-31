@@ -1,8 +1,12 @@
+import java.util.Stack;
+
 public class UndoInsertionOperator implements UndoOperator {
 
+    private Stack<UndoKickOperator> undoKickOperatorStack = new Stack<>();
 
     @Override
-    public void undo() {
+    public void undo(CuckooHashing table) {
 
     }
+
 }
