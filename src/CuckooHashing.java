@@ -187,6 +187,8 @@ public class CuckooHashing {
         } else {
         	this.stash.remove(x);
         }
+        UndoDeletionOperator undoDeletion = new UndoDeletionOperator(pos, x);
+        undoStack.push(undoDeletion);
         return true;
     }
 
