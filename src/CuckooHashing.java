@@ -191,7 +191,7 @@ public class CuckooHashing {
         if(pos==-1)
         	return false;
         //Clear stack in case previous successful operation was insert
-        if (undoStack.peek() instanceof UndoInsertionOperator)
+        if (!undoStack.empty() && undoStack.peek() instanceof UndoInsertionOperator)
             undoStack.clear();
         if (pos<this.capacity()) {
             array[pos] = null;
