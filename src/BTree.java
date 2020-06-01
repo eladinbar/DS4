@@ -88,131 +88,82 @@ public class BTree<T extends Comparable<T>> {
     }
 
     public T delete(T value) {
+        if (value == null)
+            return null;
         Node<T> nodeToDelete = this.getNode(value);
         T removed = delete(value, nodeToDelete);
         return removed;
     }
 
-    private T delete (T value, Node<T> nodeToDelete) {
+    private T delete(T value, Node<T> nodeToDelete) {
         if (nodeToDelete == null)
             return null;
-        else if (nodeToDelete == root & nodeToDelete.numberOfKeys()==1 & nodeToDelete.numberOfChildren()==0) {
+        else if (nodeToDelete == root & nodeToDelete.numberOfKeys() == 1 & nodeToDelete.numberOfChildren() == 0) {
             root = null;
             return value;
         }
         Node<T> node = root;
-        while (node!=nodeToDelete) {
-            for (int i=0; i<node.numberOfKeys(); i++) {
+        while (node.indexOf(value) == -1) {
+            for (int i = 0; i < node.numberOfKeys(); i++) {
                 if (value.compareTo(node.getKey(i)) <= 0) {
                     node = node.getChild(i);
                     break;
-                }
-                else if (node.childrenSize == i+2) {
+                } else if (node.childrenSize == i + 2) {
                     node = node.getChild(i + 1);
                     break;
                 }
             }
-            if (node!=nodeToDelete && node.numberOfKeys() == minKeySize) {
-                node = combined(node);
+            if (node.childrenSize!=0 & node.numberOfKeys() == minKeySize) {
+                Node<T> tmpNode = node;
+                tmpNode = shift(node);
+                node = (tmpNode==null) ? merge(node) : node;
             }
         }
+        nodeToDelete = node;
         int valueIndex = node.indexOf(value);
         if (nodeToDelete.childrenSize == 0) { //delete from leaf node
             if (nodeToDelete.numberOfKeys() == minKeySize) { //if node contains 't-1' elements modification is required
-                nodeToDelete = this.combined(nodeToDelete);
+                Node<T> tmpNode = nodeToDelete;
+                tmpNode = shift(nodeToDelete);
+                nodeToDelete = (tmpNode==null) ? merge(nodeToDelete) : nodeToDelete;
             }
             nodeToDelete.removeKey(value);
-        }
-        else { //delete from internal node
+        } else { //delete from internal node
             if (nodeToDelete.getChild(valueIndex).numberOfKeys() > minKeySize) { //if left child contains at least 't' elements
                 T predecessor = this.predecessor(value);
                 delete(predecessor);
                 nodeToDelete.removeKey(value);
                 nodeToDelete.addKey(predecessor);
-            }
-            else if (nodeToDelete.getChild(valueIndex + 1).numberOfKeys() > minKeySize) { //else if right child contains at least 't' elements
+            } else if (nodeToDelete.getChild(valueIndex + 1).numberOfKeys() > minKeySize) { //else if right child contains at least 't' elements
                 T successor = successor(value);
                 delete(successor);
                 nodeToDelete.removeKey(value);
                 nodeToDelete.addKey(successor);
-            }
-            else { //else no children contain at least 't' elements - merge
-                nodeToDelete = this.combined(nodeToDelete);
+            } else { //else no children contain at least 't' elements
+                nodeToDelete = merge(nodeToDelete.getChild(nodeToDelete.indexOf(value) + 1));
                 delete(value, nodeToDelete);
             }
             return value;
         }
-
-
-
-//        T removed = node.removeKey(value); //Move down?
-//        if (node.numberOfChildren() == 0) {
-//            // leaf node
-//            if (node.parent != null && node.numberOfKeys() == minKeySize) {
-//                node = this.combined(node);
-//            }
-//            else if (node.parent == null && node.numberOfKeys() == 0) {
-//                // Removing root node with no keys or children
-//                root = null;
-//            }
-//        }
-//        else {
-//            // internal node
-//            Node<T> lesser = node.getChild(valueIndex);
-//            Node<T> greatest = this.getGreatestNode(lesser);
-//            T replaceValue = this.removeGreatestValue(greatest);
-//            node.addKey(replaceValue);
-//            if (greatest.parent != null && greatest.numberOfKeys() < minKeySize) {
-//                this.combined(greatest);
-//            }
-//            if (greatest.numberOfChildren() > maxChildrenSize) {
-//                this.split(greatest);
-//            }
-//        }
-
         size--;
 
         return value;
     }
 
-    private T successor (T value) { //Assumes only calls from delete() are received
+    private T successor(T value) { //Assumes only calls from delete() are received
         Node<T> node = this.getNode(value);
         int valueIndex = node.indexOf(value);
         node = node.getChild(valueIndex + 1);
         node = this.getLowestNode(node);
         return node.getKey(0);
-
-//        while (node.childrenSize != 0) {
-//            for (int i = 0; i < node.numberOfKeys(); i++) {
-//                T currentValue = node.getKey(i);
-//                if (value.compareTo(currentValue) <= 0)
-//                    node = node.getChild(i);
-//                else
-//                    node = node.getChild(i + 1);
-//                break;
-//            }
-//        }
-//        return node.getKey(0);
     }
 
-    private T predecessor (T value) { //Assumes only calls from delete are received
+    private T predecessor(T value) { //Assumes only calls from delete are received
         Node<T> node = this.getNode(value);
         int valueIndex = node.indexOf(value);
         node = node.getChild(valueIndex);
         node = this.getGreatestNode(node);
         return node.getKey(node.keysSize - 1);
-
-//        while (node.childrenSize != 0) {
-//            for (int i = 0; i < node.numberOfKeys(); i++) {
-//                T currentValue = node.getKey(i);
-//                if (value.compareTo(currentValue) <= 0)
-//                    node = node.getChild(i);
-//                else
-//                    node = node.getChild(i + 1);
-//                break;
-//            }
-//        }
-//        return node.getKey(node.keysSize -1);
     }
 
     //Task 2.2
@@ -310,7 +261,7 @@ public class BTree<T extends Comparable<T>> {
         return parentOfLastSplit;
     }
 
-    private int findChildIndexToInsert(Node<T> node, T value){
+    private int findChildIndexToInsert(Node<T> node, T value) {
         //left most child
         T smallestInNode = node.getKey(0);
         T largestInNode = node.getKey(node.numberOfKeys() - 1);
@@ -616,10 +567,10 @@ public class BTree<T extends Comparable<T>> {
     private Node<T> combined(Node<T> node) {
         Node<T> parent = node.parent;
         boolean makeNewRoot = false;
-        if (parent == null) {
-            parent = node;
-            node = node.getChild(0);
-            if (root.numberOfKeys()==1)
+        if (parent == root) {
+//            parent = node;
+//            node = node.getChild(0);
+            if (root.numberOfKeys() == 1)
                 makeNewRoot = true;
         }
         int borrowerNodeIndex = parent.indexOf(node);
@@ -632,7 +583,7 @@ public class BTree<T extends Comparable<T>> {
         //try to borrow key from the left brother
         if (leftBrotherIndex >= 0 && leftBrother.numberOfKeys() > minKeySize) {
             T leftBrotherMaxKey = leftBrother.getKey(leftBrother.keysSize - 1);
-            Node<T> leftBrotherRightChild = leftBrother.getChild(leftBrother.childrenSize - 1);
+            Node<T> leftBrotherRightChild = (leftBrother.childrenSize == 0) ? null : leftBrother.removeChild(leftBrother.childrenSize - 1);
             int separatingKeyIndex = leftBrotherIndex;
             T parentKeyToMove = parent.removeKey(separatingKeyIndex);
             parent.addKey(leftBrother.removeKey(leftBrotherMaxKey));
@@ -642,7 +593,7 @@ public class BTree<T extends Comparable<T>> {
         //try to borrow key from the right brother
         else if (rightBrotherIndex < parent.numberOfChildren() && rightBrother.numberOfKeys() > minKeySize) {
             T rightBrotherMinKey = rightBrother.getKey(0);
-            Node<T> rightBrotherLeftChild = rightBrother.getChild(0);
+            Node<T> rightBrotherLeftChild = (rightBrother.childrenSize == 0) ? null : rightBrother.removeChild(0);
             int separatingKeyIndex = borrowerNodeIndex;
             T parentKeyToMove = parent.removeKey(separatingKeyIndex);
             parent.addKey(rightBrother.removeKey(rightBrotherMinKey));
@@ -724,6 +675,126 @@ public class BTree<T extends Comparable<T>> {
             return productNode;
         }
         return node;
+    }
+
+    //Tries to shift a key to the designated node from one of its brothers
+    private Node<T> shift(Node<T> node) {
+        Node<T> parent = node.parent;
+        int borrowerNodeIndex = parent.indexOf(node);
+        int leftBrotherIndex = borrowerNodeIndex - 1;
+        int rightBrotherIndex = borrowerNodeIndex + 1;
+
+        Node<T> leftBrother = parent.getChild(leftBrotherIndex);
+        Node<T> rightBrother = parent.getChild(rightBrotherIndex);
+
+        //try to borrow key from the left brother
+        if (leftBrotherIndex >= 0 && leftBrother.numberOfKeys() > minKeySize) {
+            T leftBrotherMaxKey = leftBrother.getKey(leftBrother.keysSize - 1);
+            Node<T> leftBrotherRightChild = (leftBrother.childrenSize == 0) ? null : leftBrother.removeChild(leftBrother.childrenSize - 1);
+            int separatingKeyIndex = leftBrotherIndex;
+            T parentKeyToMove = parent.removeKey(separatingKeyIndex);
+            parent.addKey(leftBrother.removeKey(leftBrotherMaxKey));
+            node.addKey(parentKeyToMove);
+            node.addChild(leftBrotherRightChild);
+        }
+        //else try to borrow key from the right brother
+        else if (rightBrotherIndex < parent.numberOfChildren() && rightBrother.numberOfKeys() > minKeySize) {
+            T rightBrotherMinKey = rightBrother.getKey(0);
+            Node<T> rightBrotherLeftChild = (rightBrother.childrenSize == 0) ? null : rightBrother.removeChild(0);
+            int separatingKeyIndex = borrowerNodeIndex;
+            T parentKeyToMove = parent.removeKey(separatingKeyIndex);
+            parent.addKey(rightBrother.removeKey(rightBrotherMinKey));
+            node.addKey(parentKeyToMove);
+            node.addChild(rightBrotherLeftChild);
+        }
+        else //else cannot shift keys
+            return null;
+        return node;
+    }
+
+    //Merges the given node with its parent node
+    private Node<T> merge(Node<T> node) {
+        Node<T> parent = node.parent;
+        boolean makeNewRoot = false;
+        if (parent == root & root.numberOfKeys() == 1)
+            makeNewRoot = true;
+        int borrowerNodeIndex = parent.indexOf(node);
+        int leftBrotherIndex = borrowerNodeIndex - 1;
+        int rightBrotherIndex = borrowerNodeIndex + 1;
+
+        Node<T> leftBrother = parent.getChild(leftBrotherIndex);
+        Node<T> rightBrother = parent.getChild(rightBrotherIndex);
+        Node<T> productNode = new Node<>(null, maxKeySize, maxChildrenSize); //creating an empty node for merging
+        //try to merge with left brother if it exists
+        if (leftBrotherIndex >= 0) {
+            int borrowedKeyIndex = leftBrotherIndex;
+            productNode.addKey(parent.removeKey(borrowedKeyIndex));
+            //adding the left brother's keys
+            for (int i = 0; i < leftBrother.numberOfKeys(); i++) {
+                T key = leftBrother.getKey(i);
+                productNode.addKey(key);
+            }
+            // if leftBrother has children, move them to productNode
+            if (leftBrother.numberOfChildren() > 0) {
+                for (int i = 0; i < leftBrother.numberOfChildren(); i++) {
+                    Node<T> child = leftBrother.getChild(i);
+                    productNode.addChild(child);
+                }
+            }
+            //adding the node's keys to the product node
+            for (int i = 0; i < node.numberOfKeys(); i++) {
+                T key = node.getKey(i);
+                productNode.addKey(key);
+            }
+            //if node has children, move them to productNode
+            if (node.numberOfChildren() > 0) {
+                for (int i = 0; i < node.numberOfChildren(); i++) {
+                    Node<T> child = node.getChild(i);
+                    productNode.addChild(child);
+                }
+            }
+            parent.removeChild(borrowerNodeIndex);
+            parent.removeChild(leftBrotherIndex);
+            parent.addChild(productNode);
+        }
+        //else merge with the right brother
+        else {
+            int borrowedKeyIndex = borrowerNodeIndex;
+            productNode.addKey(parent.removeKey(borrowedKeyIndex));
+            //adding the right brother's keys
+            for (int i = 0; i < rightBrother.numberOfKeys(); i++) {
+                T key = rightBrother.getKey(i);
+                productNode.addKey(key);
+            }
+            //if rightBrother has children, move them to productNode
+            if (rightBrother.numberOfChildren() > 0) {
+                for (int i = 0; i < rightBrother.numberOfChildren(); i++) {
+                    Node<T> child = rightBrother.getChild(i);
+                    productNode.addChild(child);
+                }
+            }
+
+            //adding the node's keys to the product node
+            for (int i = 0; i < node.numberOfKeys(); i++) {
+                T key = node.getKey(i);
+                productNode.addKey(key);
+            }
+            //if node has children, move them to productNode
+            if (node.numberOfChildren() > 0) {
+                for (int i = 0; i < node.numberOfChildren(); i++) {
+                    Node<T> child = node.getChild(i);
+                    productNode.addChild(child);
+                }
+            }
+            parent.removeChild(rightBrotherIndex);
+            parent.removeChild(borrowerNodeIndex);
+            parent.addChild(productNode);
+        }
+        if (makeNewRoot) {
+            root = productNode;
+            productNode.parent = null;
+        }
+        return productNode;
     }
 
     /**
