@@ -50,7 +50,7 @@ public class CuckooHashing {
         if (find(x))
             return false;
         //Clear stack in case previous successful operation was delete
-        if (undoStack.peek() instanceof UndoDeletionOperator)
+        if (!undoStack.empty() && undoStack.peek() instanceof UndoDeletionOperator)
             undoStack.clear();
         return insertHelper1(x);
     }
@@ -102,6 +102,7 @@ public class CuckooHashing {
             }
             //insertion got into a cycle use overflow list
             this.stash.add(x);
+            insertionOperator.add(x,-1);
             undoStack.push(insertionOperator);
             return true;
         }
@@ -111,7 +112,8 @@ public class CuckooHashing {
     }
 	
 	public void undo() {
-		undoStack.pop().undo(this);
+        if(!undoStack.empty())
+		    undoStack.pop().undo(this);
 	}
 
     /**

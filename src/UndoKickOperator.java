@@ -11,6 +11,9 @@ public class UndoKickOperator implements UndoOperator {
     @Override
     public void undo(CuckooHashing table) {
         String[] elements = table.getArray();
-        elements[index] = value;
+        if(index == -1)
+            table.getStash().remove(value);
+        else
+            elements[index] = value;
     }
 }
